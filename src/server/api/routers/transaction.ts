@@ -55,7 +55,6 @@ export const transactionRouter = createTRPCRouter({
     }),
 
   // Get transaction by ID
-  // Get transaction by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
@@ -65,7 +64,7 @@ export const transactionRouter = createTRPCRouter({
         with: { operations: true },
       });
 
-      // ✅ If tx + ops already exist
+      // If tx + ops already exist
       if (dbTx && dbTx.operations.length > 0) {
         return {
           transaction: dbTx,
