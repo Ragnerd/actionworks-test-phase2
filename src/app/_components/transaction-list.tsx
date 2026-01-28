@@ -17,6 +17,13 @@ const DEFAULT_PUBKEY =
 
 const ITEMS_PER_PAGE = 20;
 
+interface Balance {
+  asset_type: string;
+  balance: string;
+  asset_code?: string;
+  asset_issuer?: string;
+}
+
 export function TransactionList() {
   const [pubKeyInput, setPubKeyInput] = useState(DEFAULT_PUBKEY);
   const [connectedPubKey, setConnectedPubKey] = useState<string | null>(null);
@@ -24,20 +31,22 @@ export function TransactionList() {
 
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
 
+  const publicKey = connectedPubKey ?? "";
+
   const { data, isLoading, error } = api.transaction.getAll.useQuery(
-    { publicKey: connectedPubKey! },
+    { publicKey },
     { enabled: !!connectedPubKey },
   );
 
   const { data: accountData, isLoading: isLoadingAccount } =
     api.transaction.getAcc.useQuery(
-      { publicKey: connectedPubKey! },
+      { publicKey },
       { enabled: !!connectedPubKey },
     );
 
   const { data: txDetails, isLoading: isLoadingDetails } =
     api.transaction.getById.useQuery(
-      { id: selectedTxId! },
+      { id: selectedTxId ?? "" },
       { enabled: !!selectedTxId },
     );
 
@@ -131,7 +140,7 @@ export function TransactionList() {
                 ) : (
                   <p className="text-2xl font-bold">
                     {accountData?.balances.find(
-                      (b) => b.asset_type === "native",
+                      (b: Balance) => b.asset_type === "native",
                     )?.balance || "0"}{" "}
                     XLM
                   </p>
