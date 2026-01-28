@@ -156,12 +156,12 @@ export function TransactionList() {
                 <CardHeader>
                   <CardTitle className="font-mono text-sm">
                     <a
-                      href={`https://stellar.expert/explorer/public/tx/${tx.hash}`}
+                      href={`https://stellar.expert/explorer/public/tx/${tx.hash ?? tx.id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-primary hover:underline"
                     >
-                      {tx.hash.slice(0, 16)}...
+                      {(tx.hash ?? tx.id).slice(0, 16)}...
                     </a>
                   </CardTitle>
                 </CardHeader>
@@ -170,7 +170,9 @@ export function TransactionList() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Operations:</span>
-                      <span className="font-semibold">{tx.operationCount}</span>
+                      <span className="font-semibold">
+                        {tx.operationCount ?? "N/A"}
+                      </span>
                     </div>
 
                     <div className="flex justify-between">
@@ -201,8 +203,8 @@ export function TransactionList() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Source:</span>
                       <span className="font-mono text-sm">
-                        {tx.sourceAccount.slice(0, 6)}...
-                        {tx.sourceAccount.slice(-6)}
+                        {tx.sourceAccount?.slice(0, 6)}...
+                        {tx.sourceAccount?.slice(-6)}
                       </span>
                     </div>
 
@@ -245,9 +247,11 @@ export function TransactionList() {
 
           <Dialog
             open={!!selectedTxId}
-            onOpenChange={() => setSelectedTxId(null)}
+            onOpenChange={(open) => {
+              if (!open) setSelectedTxId(null);
+            }}
           >
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-h-[85vh] max-w-3xl overflow-x-hidden overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Transaction Details</DialogTitle>
               </DialogHeader>
@@ -297,16 +301,50 @@ export function TransactionList() {
                   </div>
 
                   {/* XDR */}
-                  <div className="space-y-2">
-                    <p className="font-semibold">Envelope XDR</p>
-                    <pre className="bg-muted max-h-40 overflow-auto rounded p-2 text-xs">
-                      {txDetails.transaction.envelopeXdr}
-                    </pre>
+                  <div className="space-y-4">
+                    {/* Envelope XDR */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold">Envelope XDR</p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              txDetails.transaction.envelopeXdr ?? "",
+                            )
+                          }
+                          className="text-primary text-xs hover:underline"
+                        >
+                          Copy
+                        </button>
+                      </div>
 
-                    <p className="font-semibold">Result XDR</p>
-                    <pre className="bg-muted max-h-40 overflow-auto rounded p-2 text-xs">
-                      {txDetails.transaction.resultXdr}
-                    </pre>
+                      <pre className="bg-muted max-h-48 w-full overflow-x-hidden overflow-y-auto rounded p-3 text-xs leading-relaxed break-all whitespace-pre-wrap">
+                        {txDetails.transaction.envelopeXdr}
+                      </pre>
+                    </div>
+
+                    {/* Result XDR */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold">Result XDR</p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              txDetails.transaction.resultXdr ?? "",
+                            )
+                          }
+                          className="text-primary text-xs hover:underline"
+                        >
+                          Copy
+                        </button>
+                      </div>
+
+                      <pre className="bg-muted max-h-32 w-full overflow-x-hidden overflow-y-auto rounded p-3 text-xs leading-relaxed break-all whitespace-pre-wrap">
+                        {txDetails.transaction.resultXdr}
+                      </pre>
+                    </div>
                   </div>
 
                   {/* OPERATIONS */}
@@ -326,10 +364,10 @@ export function TransactionList() {
                         {op.from && <p>From: {op.from}</p>}
                         {op.to && <p>To: {op.to}</p>}
                         {op.amount && <p>Amount: {op.amount}</p>}
-                        {op.asset_type && <p>Asset: {op.asset_type}</p>}
+                        {op.asset && <p>Asset: {op.asset}</p>}
 
                         <p className="text-muted-foreground text-xs">
-                          Source: {op.source_account}
+                          Source: {op.sourceAccount}
                         </p>
                       </div>
                     ))}

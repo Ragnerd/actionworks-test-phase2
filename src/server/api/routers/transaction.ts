@@ -14,7 +14,7 @@ export const transactionRouter = createTRPCRouter({
     .query(async ({ input }) => {
       return await fetchAcc(input.publicKey);
     }),
-    
+
   // Get all transactions
   getAll: publicProcedure
     .input(z.object({ publicKey: z.string() }))
@@ -55,16 +55,18 @@ export const transactionRouter = createTRPCRouter({
     }),
 
   // Get transaction by ID
+  // Get transaction by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      // 1. Try DB first
+      // 1. Try DB first (with operations)
       const dbTx = await db.query.transactions.findFirst({
         where: eq(transactions.id, input.id),
         with: { operations: true },
       });
 
-      if (dbTx) {
+      // ✅ If tx + ops already exist
+      if (dbTx && dbTx.operations.length > 0) {
         return {
           transaction: dbTx,
           operations: dbTx.operations,
@@ -72,18 +74,21 @@ export const transactionRouter = createTRPCRouter({
       }
 
       // 2. Fetch from Horizon
-      const txRes = await fetch(
-        `https://horizon.stellar.org/transactions/${input.id}`,
-      );
-      const tx = await txRes.json();
+      const [txRes, opsRes] = await Promise.all([
+        fetch(`https://horizon.stellar.org/transactions/${input.id}`),
+        fetch(
+          `https://horizon.stellar.org/transactions/${input.id}/operations?limit=200`,
+        ),
+      ]);
 
-      const opsRes = await fetch(
-        `https://horizon.stellar.org/transactions/${input.id}/operations?limit=200`,
-      );
+      if (!txRes.ok) throw new Error("Failed to fetch transaction");
+      if (!opsRes.ok) throw new Error("Failed to fetch operations");
+
+      const tx = await txRes.json();
       const opsJson = await opsRes.json();
       const ops = opsJson._embedded.records;
 
-      // 3. Save Transaction
+      // 3. Save transaction if not exists
       await db
         .insert(transactions)
         .values({
@@ -100,7 +105,7 @@ export const transactionRouter = createTRPCRouter({
         })
         .onConflictDoNothing();
 
-      // 4. Save Operations
+      // 4. Save operations (if missing)
       const opRows = ops.map((op: any) => ({
         id: op.id,
         transactionId: tx.id,

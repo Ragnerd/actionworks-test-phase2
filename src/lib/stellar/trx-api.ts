@@ -3,8 +3,10 @@ const HORIZON_URL = "https://horizon.stellar.org";
 export async function fetchStellarTransactionOperations(pubKey: string) {
   try {
     // Fetch transactions for the account using Horizon API
-    const response = await fetch(`${HORIZON_URL}/accounts/${pubKey}/transactions?limit=200&order=desc`);
-    
+    const response = await fetch(
+      `${HORIZON_URL}/accounts/${pubKey}/transactions?limit=200&order=desc`,
+    );
+
     if (!response.ok) {
       throw new Error(`Failed to fetch transactions: ${response.statusText}`);
     }
@@ -23,6 +25,9 @@ export async function fetchStellarTransactionOperations(pubKey: string) {
         memo: transaction.memo || undefined,
         memoType: transaction.memo_type,
         feeCharged: transaction.fee_charged,
+
+        envelopeXdr: transaction.envelope_xdr,
+        resultXdr: transaction.result_xdr,
       };
     });
 
@@ -36,16 +41,16 @@ export async function fetchStellarTransactionOperations(pubKey: string) {
 export async function fetchAcc(pubkey: string) {
   try {
     const response = await fetch(`${HORIZON_URL}/accounts/${pubkey}`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch account: ${response.statusText}`);
     }
 
     const accountData = await response.json();
-    
+
     // Extract native XLM balance
     const xlmBalance = accountData.balances.find(
-      (balance: any) => balance.asset_type === "native"
+      (balance: any) => balance.asset_type === "native",
     );
 
     return {
