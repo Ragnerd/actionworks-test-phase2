@@ -12,6 +12,9 @@ export async function fetchStellarTransactionOperations(pubKey: string) {
     }
 
     const data = await response.json();
+    if (!data?._embedded?.records) {
+      throw new Error("Invalid Horizon response shape");
+    }
 
     const transactions = data._embedded.records.map((transaction: any) => {
       return {

@@ -66,18 +66,33 @@ export const transactionRouter = createTRPCRouter({
     .input(z.object({ publicKey: z.string() }))
     .query(async ({ input }) => {
       // Try DB first
-      const dbTxs = await db.query.transactions.findMany({
-        where: eq(transactions.sourceAccount, input.publicKey),
-        orderBy: (t, { desc }) => [desc(t.timestamp)],
-        limit: 200,
-      });
+      let dbTxs: (typeof transactions.$inferSelect)[] = [];
+      try {
+        dbTxs = await db.query.transactions.findMany({
+          where: eq(transactions.sourceAccount, input.publicKey),
+          orderBy: (t, { desc }) => [desc(t.timestamp)],
+          limit: 200,
+        });
+      } catch (err) {
+        console.error("DB read failed:", err);
+      }
 
       if (dbTxs.length > 0) {
         return { transactions: dbTxs };
       }
 
+      if (!Array.isArray(dbTxs)) {
+        throw new Error("Invalid transaction response from Horizon");
+      }
+
       // Fetch from Horizon
-      const txs = await fetchStellarTransactionOperations(input.publicKey);
+      let txs;
+      try {
+        txs = await fetchStellarTransactionOperations(input.publicKey);
+      } catch (err) {
+        console.error("Horizon fetch failed:", err);
+        throw new Error("Failed to fetch transactions from Horizon");
+      }
 
       // Save to DB
       const rows = (txs as HorizonTx[]).map((tx) => ({
@@ -93,7 +108,7 @@ export const transactionRouter = createTRPCRouter({
         resultXdr: tx.resultXdr,
       }));
 
-      if (rows.length) {
+      if (process.env.NODE_ENV !== "production" && rows.length) {
         await db.insert(transactions).values(rows).onConflictDoNothing();
       }
 
