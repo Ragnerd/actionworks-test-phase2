@@ -8,6 +8,29 @@ import { db } from "~/server/db";
 import { transactions, operations } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 
+interface HorizonTx {
+  id: string;
+  sourceAccount: string;
+  ledger: number;
+  timestamp: string;
+  feeCharged: string;
+  successful: boolean;
+  memo: string | null;
+  memoType: string | null;
+  envelopeXdr: string | null;
+  resultXdr: string | null;
+}
+
+interface HorizonOp {
+  id: string;
+  type: string;
+  source_account?: string;
+  from?: string;
+  to?: string;
+  amount?: string;
+  asset_type?: string;
+}
+
 export const transactionRouter = createTRPCRouter({
   getAcc: publicProcedure
     .input(z.object({ publicKey: z.string() }))
@@ -34,7 +57,7 @@ export const transactionRouter = createTRPCRouter({
       const txs = await fetchStellarTransactionOperations(input.publicKey);
 
       // Save to DB
-      const rows = txs.map((tx) => ({
+      const rows = (txs as HorizonTx[]).map((tx) => ({
         id: tx.id,
         sourceAccount: tx.sourceAccount,
         ledger: tx.ledger,
@@ -85,7 +108,7 @@ export const transactionRouter = createTRPCRouter({
 
       const tx = await txRes.json();
       const opsJson = await opsRes.json();
-      const ops = opsJson._embedded.records;
+      const ops = opsJson._embedded.records as HorizonOp[];
 
       // 3. Save transaction if not exists
       await db
@@ -105,7 +128,7 @@ export const transactionRouter = createTRPCRouter({
         .onConflictDoNothing();
 
       // 4. Save operations (if missing)
-      const opRows = ops.map((op: any) => ({
+      const opRows = ops.map((op) => ({
         id: op.id,
         transactionId: tx.id,
         type: op.type,

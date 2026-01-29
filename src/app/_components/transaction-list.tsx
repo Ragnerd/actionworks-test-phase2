@@ -26,12 +26,11 @@ interface Balance {
 
 interface Tx {
   id: string;
-  hash?: string | null;
   operationCount?: number | null;
-  timestamp: string;
+  timestamp: string | Date;
   feeCharged: string;
   successful: boolean;
-  sourceAccount?: string | null;
+  sourceAccount: string;
   memo?: string | null;
 }
 
@@ -176,12 +175,12 @@ export function TransactionList() {
                 <CardHeader>
                   <CardTitle className="font-mono text-sm">
                     <a
-                      href={`https://stellar.expert/explorer/public/tx/${tx.hash ?? tx.id}`}
+                      href={`https://stellar.expert/explorer/public/tx/${tx.id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-primary hover:underline"
                     >
-                      {(tx.hash ?? tx.id).slice(0, 16)}...
+                      {tx.id.slice(0, 16)}...
                     </a>
                   </CardTitle>
                 </CardHeader>
@@ -373,7 +372,7 @@ export function TransactionList() {
                       Operations ({txDetails.operations.length})
                     </p>
 
-                    {txDetails.operations.map((op: any, i: number) => (
+                    {txDetails.operations.map((op, i) => (
                       <div key={op.id} className="space-y-1 rounded border p-3">
                         <p>
                           <b>
