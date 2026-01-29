@@ -108,7 +108,7 @@ export const transactionRouter = createTRPCRouter({
         resultXdr: tx.resultXdr,
       }));
 
-      if (process.env.NODE_ENV !== "production" && rows.length) {
+      if (rows.length) {
         await db.insert(transactions).values(rows).onConflictDoNothing();
       }
 
@@ -141,8 +141,12 @@ export const transactionRouter = createTRPCRouter({
         ),
       ]);
 
-      if (!txRes.ok) throw new Error("Failed to fetch transaction");
-      if (!opsRes.ok) throw new Error("Failed to fetch operations");
+      if (!txRes.ok || !opsRes.ok) {
+        if (dbTx) {
+          return { transaction: dbTx, operations: dbTx.operations ?? [] };
+        }
+        throw new Error("Failed to fetch transaction details");
+      }
 
       const tx = (await txRes.json()) as HorizonTxApi;
       const opsJson = (await opsRes.json()) as {
