@@ -31,6 +31,29 @@ interface HorizonOp {
   asset_type?: string;
 }
 
+interface HorizonOpApi {
+  id: string;
+  type: string;
+  source_account?: string;
+  from?: string;
+  to?: string;
+  amount?: string;
+  asset_type?: string;
+}
+
+interface HorizonTxApi {
+  id: string;
+  source_account: string;
+  ledger: number;
+  created_at: string;
+  fee_charged: string;
+  successful: boolean;
+  memo: string | null;
+  memo_type: string | null;
+  envelope_xdr: string | null;
+  result_xdr: string | null;
+}
+
 export const transactionRouter = createTRPCRouter({
   getAcc: publicProcedure
     .input(z.object({ publicKey: z.string() }))
@@ -106,9 +129,12 @@ export const transactionRouter = createTRPCRouter({
       if (!txRes.ok) throw new Error("Failed to fetch transaction");
       if (!opsRes.ok) throw new Error("Failed to fetch operations");
 
-      const tx = await txRes.json();
-      const opsJson = await opsRes.json();
-      const ops = opsJson._embedded.records as HorizonOp[];
+      const tx = (await txRes.json()) as HorizonTxApi;
+      const opsJson = (await opsRes.json()) as {
+        _embedded: { records: HorizonOpApi[] };
+      };
+
+      const ops = opsJson._embedded.records;
 
       // 3. Save transaction if not exists
       await db
