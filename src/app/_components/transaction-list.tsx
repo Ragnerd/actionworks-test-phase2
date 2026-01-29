@@ -24,6 +24,17 @@ interface Balance {
   asset_issuer?: string;
 }
 
+interface Tx {
+  id: string;
+  hash?: string | null;
+  operationCount?: number | null;
+  timestamp: string;
+  feeCharged: string;
+  successful: boolean;
+  sourceAccount?: string | null;
+  memo?: string | null;
+}
+
 export function TransactionList() {
   const [pubKeyInput, setPubKeyInput] = useState(DEFAULT_PUBKEY);
   const [connectedPubKey, setConnectedPubKey] = useState<string | null>(null);
@@ -156,7 +167,7 @@ export function TransactionList() {
 
           {/* Transaction Cards */}
           <div className="grid gap-4">
-            {paginatedTx.map((tx) => (
+            {paginatedTx.map((tx: Tx) => (
               <Card
                 key={tx.id}
                 onClick={() => setSelectedTxId(tx.id)}
