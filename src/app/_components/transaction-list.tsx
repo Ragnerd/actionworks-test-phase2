@@ -289,7 +289,7 @@ export function TransactionList() {
                   {/* TX INFO */}
                   <div className="space-y-2">
                     <p>
-                      <b>Hash:</b> {txDetails.transaction.hash}
+                      <b>Hash:</b> {txDetails.transaction.id}
                     </p>
                     <p>
                       <b>Source:</b> {txDetails.transaction.sourceAccount}
